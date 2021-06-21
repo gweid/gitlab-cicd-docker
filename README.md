@@ -553,7 +553,7 @@ node         latest    d1b3088a17b1   2 weeks ago   908MB
 1、如果这个容器已经存在，直接使用 `docker start` 启动，后面可以跟容器名或者容器id
 
 ```shell
-docker start <container_id | container_name>
+docker start <容器id | 容器名>
 ```
 
 
@@ -592,14 +592,13 @@ docker run [可选参数] image   # 根据镜像 image 创建容器，并且启�
 这里执行：
 
 ```shell
-docker run -d -it --name node node
+docker run -it --name node node
 ```
 
 这里代表：
 
 - 以 node 镜像创建并启动一个容器
 - --name node：容器名为 node
-- -d：后台运行
 - -it /bin/bash：以交互模式进入到容器的终端
 
 
@@ -613,11 +612,11 @@ docker run 的基本流程：
 #### 停止、关闭、重启容器
 
 ```shell
-docker restart <container_id | container_name>         重启容器
+docker restart <容器id | 容器名>         重启容器
 
-docker stop <container_id | container_name>            正常停止容器运行
+docker stop <容器id | 容器名>            正常停止容器运行
 
-docker kill <container_id | container_name>            立即停止容器运行
+docker kill <容器id | 容器名>            立即停止容器运行
 ```
 
 
@@ -639,15 +638,15 @@ docker ps -aq       # 列出所有的容器id
 #### 查看容器内进程
 
 ```shell
-docker top <container_id | container_name>
+docker top <容器id | 容器名>
 
 UID         PID         PPID        C          STIME        TTY         TIME          CMD
 root        16887       16866       0          17:33        pts/0       00:00:00      /bin/bash
 
 # 解析
-UID：操作人
-PID：
-PPID：
+UID：当前的用户id
+PID：父id
+PPID：进程id
 C：
 STIME：
 TTY：
@@ -655,15 +654,27 @@ TIME：
 CMD：
 ```
 
+> 注意：查看进程，需要当前容器是运行状态
+
 
 
 #### 查看容器的运行日志
 
 ```shell
-docker logs [options] <container_id | container_name>
+docker logs [options] <容器id | 容器名>
   options:
-    -t 数字，显示最后多少条
+    -tail 显示多少条
 ```
+
+
+
+#### 查看容器元数据【容器内信息】
+
+```shell
+docker inspect <容器id | 容器名>
+```
+
+这个命令能查看当前容器的所有信息
 
 
 
@@ -672,14 +683,25 @@ docker logs [options] <container_id | container_name>
 进入容器：
 
 ```shell
-docker exec -it <container_id|container_name> command
+docker exec -it <容器id | 容器名> command
 
 # 解析
 <container_id|container_name>：<容器id或者容器名>
 command：表示 linux 命令,如/bin/bash
 ```
 
- 或者在 `docker run` 的时候：【注意：/bin/bash 需要放在最后面】
+ 第二种方式
+
+```shell
+docker attach <容器id | 容器名>
+```
+
+- `docker exec`： 进入容器后开启一个新终端
+- `docker attach`：进入容器正在运行的终端
+
+
+
+或者在 `docker run` 的时候：【注意：/bin/bash 需要放在最后面】
 
 ```js
 docker run -it --name node node /bin/bash
@@ -701,12 +723,208 @@ Ctrl + P + Q      # 退出但是不停止容器
 
 
 
+#### 从容器内拷贝文件到主机
+
+```shell
+# 首先，进入容器
+docker exec -it node
+
+# 从容器内拷贝文件到主机
+docker cp 容器id:容器内路径 目的主机路径
+```
+
+这种方式是通过手动拷贝的形式，更好的方法是通过数据卷 -v 的方式，自动同步容器与主机文件，例如之前的 dokcer run
+
+```js
+dokcer run gitlab -v /srv/gitlab/config:/etc/gitlab
+```
+
+自动将容器 /srv/gitlab/config 的内容同步到主机的 /etc/gitlab
+
+
+
 #### 删除容器
 
 ```shell
-docker rm -f <container_id | container_name>   # 根据容器id 或者容器名删除容器
+docker rm -f <容器id | 容器名>         # 根据容器id 或者容器名删除容器
 
-docker rm -f $(docker ps -aq)                  # 查找出所有容器id，然后删除所有容器
+docker rm -f $(docker ps -aq)        # 查找出所有容器id，然后删除所有容器
 ```
 
 
+
+### 1-10、数据卷
+
+> 为什么需要数据卷？
+
+- 如果数据都在容器中，删除容器或者重启容器，数据就会丢失
+- 如果两个容器之间，想要进行数据共享，怎么办
+
+
+
+在生产环境中使用 Docker ，往往需要对数据进行持久化，或者需要在多个容器之间进行数据共享；数据卷就可以解决上面的问题，它是一个可供一个或多个容器使用的特殊目录，特点：
+
+- 容器可以利用数据卷与宿主机进行数据共享，或者多个容器之间进行数据共享
+- 容器对数据卷的修改是实时进行的，修改之后会马上生效
+- 数据卷的变化不会影响镜像的更新
+- 数据卷默认会一直存在，即使容器被删除
+
+说白了，就是将容器中的目录或者文件挂载份到主机上，同步更新。
+
+
+
+#### 使用数据卷
+
+当我们想把主机的目录映射到容器内时，就需要用到主机与容器之间数据共享的方式。例如把 centos 容器中的 /home 目录映射到主机的 /home/centos 目录中，实现方式为：启动容器的时候添加 -v 参数, 格式：-v 主机文件路径:容器文件路径
+
+```shell
+docker run -v /home/centos:/home -it centos
+```
+
+容器启动后，便可以在容器内的 /home 访问到主机 /home/centos 目录的内容了，并且容器重启后，/home/centos 目录下的数据也不会丢失
+
+通过查看容器信息：
+
+```shell
+docker inspect 容器id
+```
+
+可以看到：
+
+ <img src="/imgs/img11.png" style="zoom:50%;" />
+
+
+
+**数据卷同步**
+
+![](/imgs/img12.png)
+
+1. 进入主机的 /home/centos 目录，执行 ls，没有文件
+2. 进入容器的 /home 目录，执行 ls，没有文件
+3. 在主机的 /home/centos 下新建 hello.j，执行 ls，可以发现目录下多了一个 hello.js；同时在容器的 /home 下执行 ls，发现也存在 hello.js 文件。
+
+
+
+**容器被删除，主机数据卷也还在**
+
+![](/imgs/img13.png)
+
+1. 执行删除容器命令 `docker rm -f`
+2. 查看容器 `docker ps -a`，已经没有容器，确定被删除
+3. 进到数据 home 目录，执行 ls，发现 centos 目录还在
+4. 再进到 centos 目录，执行 ls，发现 hello.js 还在
+
+
+
+### 1-11、commit 构建镜像
+
+Docker 中构建镜像的方式主要有两种：
+
+- 使用 `docker commit` 命令将运行中的容器提交为镜像
+- 使用 DockerFile 文件构建镜像
+
+ `docker commit` 基本命令
+
+```shell
+docker commit -m="提交的描述信息" -a="作者" <容器id | 容器名> 生成的镜像名:[tag版本]
+```
+
+
+
+**实践一下：**
+
+1. 首先，通过 node 镜像以交互终端的形式启动一个 node 容器
+
+   ```shell
+   docker run -it node /bin/bash
+   
+   
+   # 输出，说明进入到了 node 容器的交互终端
+   root@7a6ffe0e4002:/# 
+   
+   
+   # 执行 ls 查看当前目录
+   root@7a6ffe0e4002:/# ls
+   bin  boot  dev	etc  home  lib	lib64  media  mnt  opt	proc  root  run  sbin  srv  sys  tmp  usr  var
+   ```
+
+2. 新建一个 hello.js 文件，并写入 `console.log('hello, node')`
+
+   ```shell
+   root@7a6ffe0e4002:/# touch hello.js && echo "console.log('hello, node')" > hello.js
+   
+   
+   # 再通过 ls 查看当前目录，发现多了一个 hello.js 文件，说明没有问题
+   root@7a6ffe0e4002:/# ls
+   bin  boot  dev	etc  hello.js  home  lib  lib64  media	mnt  opt  proc	root  run  sbin  srv  sys  tmp	usr  var
+   
+   
+   # 执行一下 hello.js 文件，正常打印
+   root@7a6ffe0e4002:/# node hello.js
+   ```
+
+3. Ctrl + P + Q 退出当前容器，执行 `docker commit` 构建镜像
+
+   ```shell
+   docker commit 7a6ffe0e4002 node-hello:1.0.0
+   ```
+
+4. 最后，通过 `docker images` 查看所有镜像，发现存在 node-hello 镜像
+
+   ![](/imgs/img10.png)
+
+
+
+> ps：这种方式构建镜像了解一下即可，生产实践中不推荐是用这种方法构建镜像，优先使用 DockerFile 构建镜像
+
+
+
+### 1-12、DockerFile
+
+**生产实践中强烈建议优先使用 Dockerfile 的方式构建镜像**。 因为使用 Dockerfile 构建镜像可以带来很多好处：
+
+- 易于版本化管理，Dockerfile 本身是一个文本文件，方便存放在代码仓库做版本管理，可以很方便地找到各个版本之间的变更历史；
+
+- 过程可追溯，Dockerfile 的每一行指令代表一个镜像层，根据 Dockerfile 的内容即可很明确地查看镜像的完整构建过程；
+
+- 屏蔽构建环境异构，使用 Dockerfile 构建镜像无须考虑构建环境，基于相同 Dockerfile 无论在哪里运行，构建结果都一致。
+
+
+
+#### DockerFile 常用指令
+
+| DockerFile 指令 |                           指令简介                           |
+| :-------------: | :----------------------------------------------------------: |
+|      FROM       | Dockerfile 除了注释第一行必须是 FROM ，FROM 后面跟镜像名称，代表要基于哪个基础镜像构建容器。 |
+|       RUN       |   RUN 后面跟一个具体的命令，类似于 Linux 命令行执行命令。    |
+|       ADD       |               拷贝本机文件或者远程文件到镜像内               |
+|      COPY       |                     拷贝本机文件到镜像内                     |
+|      USER       |                      指定容器启动的用户                      |
+|   ENTRYPOINT    |                        容器的启动命令                        |
+|       CMD       | CMD 为 ENTRYPOINT 指令提供默认参数，也可以单独使用 CMD 指定容器启动参数 |
+|       ENV       |          指定容器运行时的环境变量，格式为 key=value          |
+|       ARG       | 定义外部变量，构建镜像时可以使用 build-arg= 的格式传递参数用于构建 |
+|     EXPOSE      |    指定容器监听的端口，格式为 [port]/tcp 或者 [port]/udp     |
+|     WORKDIR     | 为 Dockerfile 中跟在其后的所有 RUN、CMD、ENTRYPOINT、COPY 和 ADD 命令设置工作目录 |
+
+
+
+### 1-13、图形化工具
+
+Docker 图形化界面管理工具，提供一个管理面板供使用者操作，减少命令操作，比较常见的两个：
+
+- Portainer，轻量好用，具体使用可以参考：https://juejin.cn/post/6960831907999252511
+
+- Rancher，功能齐全，但相对较大
+
+
+
+## 2、Linux 常用命令
+
+
+
+
+
+## 3、Gitlab CI/CD
+
+todo: 完善文档
