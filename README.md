@@ -526,11 +526,23 @@ dokcer rmi -f $(docker images -aq)  # 查找出所有镜像id，然后全部删�
 
 上面说过，容器是基于镜像创建的可运行实例，并且单独存在，一个镜像可以创建出多个容器。运行容器化环境时，实际上是在容器内部创建该文件系统的读写副本。 容器层允许修改镜像的整个副本。
 
-既然容器是基于镜像创建的，那么先 pull 一个 centos 镜像来进行容器的操作。
+既然容器是基于镜像创建的，那么先 pull 一个 node 镜像来进行容器的操作。
 
 ```shell
-docker pull centos
+docker pull node
 ```
+
+然后执行一下：
+
+```shell
+docker images
+
+# 输出
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+node         latest    d1b3088a17b1   2 weeks ago   908MB
+```
+
+拉去镜像成功
 
 
 
@@ -555,7 +567,7 @@ docker run [可选参数] image   # 根据镜像 image 创建容器，并且启�
 
 # 常用的可选参数
 --name container_name          定义这个容器名字
--d                             代表后台运行【全称是 --detach】
+-d                             后台运行【全称是 --detach】
 -h                             指定运行的 hostname，可以是域名也可以是 IP【全称是 --hostname】
 -p                             端口的映射【全称是 -publish】
       -p 主机端口:容器端口
@@ -571,7 +583,24 @@ docker run [可选参数] image   # 根据镜像 image 创建容器，并且启�
 -i                             以交互模式运行容器，通常与-t一起使用
 -t                             分配一个伪终端
 -it                            通常 -i 与 -t 配合使用进入交互模式，在交互模式下，可以通过所创建的终端来输入命令
+-v                             将容器的数据卷在主机中存一份【全称是 --volume】
+     -v /srv/gitlab/config:/etc/gitlab   主机数据卷:容器数据卷
 ```
+
+- 端口映射：一般为 主机端口:容器端口，代表通过将容器的某个端口映射到主机的某个端口，可以访问主机端口的时候访问到容器内部的端口
+
+这里执行：
+
+```shell
+docker run -d -it --name node node
+```
+
+这里代表：
+
+- 以 node 镜像创建并启动一个容器
+- --name node：容器名为 node
+- -d：后台运行
+- -it /bin/bash：以交互模式进入到容器的终端
 
 
 
@@ -581,7 +610,7 @@ docker run 的基本流程：
 
 
 
-#### 停止|关闭|重启容器
+#### 停止、关闭、重启容器
 
 ```shell
 docker restart <container_id | container_name>         重启容器
@@ -607,9 +636,68 @@ docker ps -aq       # 列出所有的容器id
 
 
 
-#### 进入容器
+#### 查看容器内进程
+
+```shell
+docker top <container_id | container_name>
+
+UID         PID         PPID        C          STIME        TTY         TIME          CMD
+root        16887       16866       0          17:33        pts/0       00:00:00      /bin/bash
+
+# 解析
+UID：操作人
+PID：
+PPID：
+C：
+STIME：
+TTY：
+TIME：
+CMD：
+```
 
 
+
+#### 查看容器的运行日志
+
+```shell
+docker logs [options] <container_id | container_name>
+  options:
+    -t 数字，显示最后多少条
+```
+
+
+
+#### 进入、退出容器
+
+进入容器：
+
+```shell
+docker exec -it <container_id|container_name> command
+
+# 解析
+<container_id|container_name>：<容器id或者容器名>
+command：表示 linux 命令,如/bin/bash
+```
+
+ 或者在 `docker run` 的时候：【注意：/bin/bash 需要放在最后面】
+
+```js
+docker run -it --name node node /bin/bash
+```
+
+![](/imgs/img9.png)
+
+会发现，进入容器后，终端明显是不同的。并且通过 ls 输出所有目录，通过 `node --version` 输出了当前 node 版本，说明确实进入到了 node 容器的 /bin，并启动了 bash 终端
+
+
+
+退出容器：
+
+```shell
+exit              # 退出并停止容器
+
+Ctrl + P + Q      # 退出但是不停止容器
+```
 
 
 
@@ -620,14 +708,5 @@ docker rm -f <container_id | container_name>   # 根据容器id 或者容器名�
 
 docker rm -f $(docker ps -aq)                  # 查找出所有容器id，然后删除所有容器
 ```
-
-
-
-
-
-
-
-
-
 
 
