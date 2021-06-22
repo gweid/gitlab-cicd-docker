@@ -1104,4 +1104,87 @@ cat /root/test.txt            #查看 /root 目录下 test.txt 文件内容
 
 ## 3、Gitlab CI/CD 持续集成部署
 
-todo: 完善文档
+下面，将使用 Gitlab CI/CD + Docker 持续集成部署前端项目
+
+
+
+先将服务器的安全组配置一下，主要是入口方向的，这样外部才能访问到
+
+![](/imgs/img16.png)
+
+
+
+### 3-1、使用 Docker 安装 Gitlab
+
+> 安装 Gitlab 至少得 `2核4G` 以上的配置，最好 `2核8G` 以上
+
+
+
+Docker 安装 Gitlab 非常简单，只需要一条命令即可：
+
+```shell
+sudo docker run --detach \
+  --hostname 111.121.55.114 \
+  --publish 443:443 --publish 80:80 --publish 222:22 \
+  --name gitlab \
+  --restart always \
+  -v /srv/gitlab/config:/etc/gitlab \
+  -v /srv/gitlab/logs:/var/log/gitlab \
+  -v /srv/gitlab/data:/var/opt/gitlab \
+  gitlab/gitlab-ce:latest
+```
+
+其实整个命令简单版就是 `ddocker run --name gitlab gitlab/gitlab-ce:latest`，去 gitlab/gitlab-ce:latest 下载 gitlab 镜像，并且以这个镜像为模板，启动一个名为 gitlab 的容器。
+
+- sudo：用来提升权限，使用 root 权限进行操作
+- hostname：主机的 hostname，可以是域名或者 ip 地址
+- publish：将容器内的端口映射到主机，那么就可以通过 `主机hostname:端口` 访问到容器内部，这里 443 是 https 端口、80 是 http 端口、22 是 ssl 端口，但是主机 22 端口被占用，所以映射到 222
+- name：给启动的容器命名
+- restart：重启的方式，always 表示自动重启。除了 always，还有其他多种重启策略，具体可参考上面的 [启动容器](###启动容器) 章节
+- v：数据卷映射，将容器的目录到主机目录，实现数据持久化和共享
+
+
+
+等到 Gitlab 安装完，并启动好，那么就可以通过配置的 hostname 进行访问，例如这里配置的是 111.121.55.114，浏览器打开这个 ip 地址，如果出现以下界面，则说明 Gitlab 安装成功
+
+![](/imgs/img17.png)
+
+
+
+第一次进入这个页面，需要设置 root 管理员密码，这个 root 就是 Gitlab 的超级管理员，看到 GitLab 的所有信息，如用户、项目、流水线等。
+
+设置完 root 密码，既可以登录进入到 Gitlab 主界面了。接下来就通过新建一个项目，推送到 Gitlab。
+
+
+
+### 3-2、推送项目到 Gitlab
+
+首先，在 Gitlab 上新建一个项目仓库：
+
+![](/imgs/img18.png)
+
+
+
+然后，通过 vue-cli 创建一个项目：
+
+```shell
+vue create gitlab-cicd
+```
+
+创建完成之后，将这个项目推送到 gitlab 仓库
+
+```shell
+cd hello-cicd
+git init
+git add .
+git commit -m "init"
+git remote add origin http://111.121.55.114/guanwei/gitlab-cicd.git
+git push -u origin master
+```
+
+如果推送成功，说明 Gitlab 可以正常使用。
+
+
+
+### 3-3、安装 GitLab Runner
+
