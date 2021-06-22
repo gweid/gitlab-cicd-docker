@@ -887,33 +887,163 @@ docker commit -m="提交的描述信息" -a="作者" <容器id | 容器名> 生�
 
 
 
-### 1-12、DockerFile
+### 1-12、Dockerfile
 
-**生产实践中强烈建议优先使用 Dockerfile 的方式构建镜像**。 因为使用 Dockerfile 构建镜像可以带来很多好处：
+生产实践中强烈建议**优先使用 Dockerfile 的方式构建镜像**。 使用 Dockerfile 构建镜像可以带来很多好处：
 
 - 易于版本化管理，Dockerfile 本身是一个文本文件，方便存放在代码仓库做版本管理，可以很方便地找到各个版本之间的变更历史；
-
 - 过程可追溯，Dockerfile 的每一行指令代表一个镜像层，根据 Dockerfile 的内容即可很明确地查看镜像的完整构建过程；
-
 - 屏蔽构建环境异构，使用 Dockerfile 构建镜像无须考虑构建环境，基于相同 Dockerfile 无论在哪里运行，构建结果都一致。
 
 
 
-#### DockerFile 常用指令
+#### Dockerfile 构建镜像步骤
 
-| DockerFile 指令 |                           指令简介                           |
-| :-------------: | :----------------------------------------------------------: |
-|      FROM       | Dockerfile 除了注释第一行必须是 FROM ，FROM 后面跟镜像名称，代表要基于哪个基础镜像构建容器。 |
-|       RUN       |   RUN 后面跟一个具体的命令，类似于 Linux 命令行执行命令。    |
-|       ADD       |               拷贝本机文件或者远程文件到镜像内               |
-|      COPY       |                     拷贝本机文件到镜像内                     |
-|      USER       |                      指定容器启动的用户                      |
-|   ENTRYPOINT    |                        容器的启动命令                        |
-|       CMD       | CMD 为 ENTRYPOINT 指令提供默认参数，也可以单独使用 CMD 指定容器启动参数 |
-|       ENV       |          指定容器运行时的环境变量，格式为 key=value          |
+1. 编写 Dockerfile 文件
+2. docker build 构建镜像
+3. docker run 运行镜像
+4. docker push 发布到镜像仓库
+
+
+
+#### Docker 镜像原理
+
+Docker 镜像是由一系列镜像层（layer）组成的，每一层代表了镜像构建过程中的一次提交。下面以一段 DockerFile 代码来说明：
+
+```shell
+FROM nginx:alpine
+
+COPY nginx/default.conf /etc/nginx/conf.d
+
+COPY dist/ /usr/share/nginx/html
+```
+
+这个 Dockerfile 由三步组成:
+
+- 基于 nginx 构建一个镜像
+- 复制主机 nginx/default.conf 到镜像内的 /etc/nginx/conf.d
+- 复制主机 dist/ 到镜像内的 /usr/share/nginx/html
+
+实际上，Dockerfile 的每一行命令，都生成了一个镜像层。
+
+ <img src="/imgs/img19.png" style="zoom:50%;" />
+
+这张图就很好解析了 Docker 镜像分层的概念：基于 centos 创建一个基础镜像是一层，下载 jdk 是一层，下载 tomcat 是一层，最后将这些镜像层打包启动为一个可读写的容器。
+
+分层的结构使得 Docker 镜像非常轻量，每一层根据镜像的内容都有一个唯一的 ID 值，当不同的镜像之间有相同的镜像层时，便可以实现不同的镜像之间共享镜像层的效果。
+
+
+
+#### Dockerfile 常用指令
+
+| DockerFile 指令 | 指令简介                                                     |
+| :-------------: | :----------------------------------------------------------- |
+|      FROM       | Dockerfile 除了注释第一行必须是 FROM ，基于哪个基础镜像构建。例如：FROM centos |
+|       RUN       | RUN 后面跟一个具体的命令，类似于 Linux 命令行执行命令。例如： RUN npm run build 或者 RUN ['yum', 'install', 'nginx'] |
+|       ADD       | 拷贝本机文件或者远程文件到镜像内，如果是 URL 或压缩包会自动下载或自动解压 |
+|      COPY       | 拷贝本机文件到镜像内【类似 ADD】                             |
+|      USER       | 指定容器启动的用户，即为 RUN、CMD、ENTRYPOINT 执行命令指定运行用户 |
+|   ENTRYPOINT    | 容器启动时执行的 shell 命令。ENTRYPOINT /bin/bash -c 'start.sh'  或 ENTRYPOINT [’/bin/bash‘, '-c', 'start.sh'] |
+|       CMD       | 容器启动时要执行的 shell 命令。CMD bin/bash -c 'start.sh' 或 CMD [’/bin/bash‘, '-c', 'start.sh']。CMD 与 ENTRYPOINT 区别：CMD 只有最后一个命令会生效，ENTRYPOINT 可以追加命令 |
+|       ENV       | 构建的时候设置的环境变量，格式为 key=value                   |
 |       ARG       | 定义外部变量，构建镜像时可以使用 build-arg= 的格式传递参数用于构建 |
-|     EXPOSE      |    指定容器监听的端口，格式为 [port]/tcp 或者 [port]/udp     |
-|     WORKDIR     | 为 Dockerfile 中跟在其后的所有 RUN、CMD、ENTRYPOINT、COPY 和 ADD 命令设置工作目录 |
+|     EXPOSE      | 指定容器对外暴露的端口，可以在这里指定，也可以在 docker run 时通过 -p 指定，两者意思是一样的 |
+|     WORKDIR     | 为 RUN、CMD、ENTRYPOINT、COPY 和 ADD 命令设置工作目录，也就是指定镜像工作目录 |
+|     VOLUME      | 容器数据卷，可以在这里指定，也可以在 docker run 时通过 -v 指定，两者意思是一样的 |
+
+通过一个实例来了解上述命令：
+
+```shell
+FROM centos:7
+COPY nginx.repo /etc/yum.repos.d/nginx.repo
+RUN yum install -y nginx
+EXPOSE 80
+ENV HOST=mynginx
+CMD nginx
+```
+
+- 第一行表示基于 centos:7 这个镜像来构建自定义镜像。注意，每个 Dockerfile 的第一行除了注释都必须以 FROM 开头。
+- 第二行表示拷贝本地文件 nginx.repo 文件到容器内的 /etc/yum.repos.d 目录下。这里拷贝 nginx.repo 文件是为了添加 nginx 的安装源。
+- 第三行表示在容器内运行 yum install -y nginx 命令，安装 nginx 服务到容器内，执行完第三行命令，容器内的 nginx 已经安装完成。
+- 第四行声明容器内业务（nginx）使用 80 端口对外提供服务。
+- 第五行定义构建的时的环境变量 HOST=mynginx，容器启动后可以获取到环境变量 HOST 的值为 mynginx。
+- 第六行设置了容器的启动命令为 nginx
+
+
+
+#### Dockerfile 构建镜像，并发布到 DockerHub
+
+接下来实战一下，怎么利用 Dockerfile 构建一个镜像，并发布到 DockerHub 镜像仓库
+
+
+
+**Dockerfile 构建镜像**
+
+首先，创建一个 Dockerfile 文件【注意大小写】
+
+```shell
+touch Dockerfile
+```
+
+接着，`vim DockerFile` 进入 Dockerfile 文件进行编辑
+
+```shell
+FROM centos                      # 基于 centos 创建一个镜像
+
+RUN yum install -y vim           # 为这个镜像安装 vim 工具
+
+CMD echo '------end--------'     # 输出 '------end--------'
+
+CMD /bin/bash                    # 打开 /bin/bash 终端
+```
+
+然后执行：
+
+```shell
+docker build -f Dockerfile文件路径 -t 镜像名:[tag版本] .
+
+# 没有通过 -f 指定 Dockerfile 文件路径，默认使用当前目录下的 Dockerfile 文件
+# -t 镜像名:版本号，例如 myceentos:1.0.0
+# 注意，末尾一定要有 . 这个符号！！！！！！！！！！！！！！
+```
+
+制作完镜像，通过 `docker images` 查看有没有存在镜像
+
+![](/imgs/img20.png)
+
+出现刚刚制作的镜像，代表通过 Dockerfile 制作镜像成功，接下来就是将镜像推送到 DockerHub 仓库
+
+
+
+**发布镜像到 DockerHub**
+
+首先，要先到 [DockerHub](https://hub.docker.com/) 上注册一个一个账号。
+
+<img src="/imgs/img21.png" style="zoom:50%;" />
+
+这里要记住 Docker ID 与密码，后面登陆 DockerHub 需要用到
+
+注册完成之后登陆到 DockerHub
+
+```shell
+docker login -u DockerId -p Password
+
+# -u 后面跟刚刚注册的 Docker ID
+# -p 后面跟密码
+```
+
+发布镜像到 DockerHub
+
+```shell
+docker push mycentos:1.0
+
+# 使用 DockerId/镜像名:版本 这样的形式
+# 其实，在使用 docker build 构建镜像的时候，最好是：docker build -t DockerID/镜像名:版本号 这种形式
+# 因为，如果单纯使用 镜像名:版本号，那么可能会有重名冲突，但是 DockerID 是唯一的，就不会存在同名冲突
+# 推送的时候，就可以 docker push DockerID/镜像名:版本号
+```
+
+发布完成后，进入DockerHub 自己的详情页，如果有刚刚推送上来的镜像，代表发布成功。
 
 
 
