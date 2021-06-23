@@ -1316,5 +1316,51 @@ git push -u origin master
 
 
 
+### 3-3、解决 git clone 的地址与 IP 不同的问题
+
+当将项目传上去的时候，你换了一台电脑，或者别人要去进行 git clone 将项目拉到本地的时候，会发现，无论是 http 方式还是 ssl 方式，那么地址与自己本机服务器的 IP 地址对应不上，没办法 clone 到本地。解决：
+
+启动 gitlab 的时候是：
+
+```shell
+sudo docker run --detach \
+  --hostname 111.121.55.114 \
+  --publish 443:443 --publish 80:80 --publish 222:22 \
+  --name gitlab \
+  --restart always \
+  -v /srv/gitlab/config:/etc/gitlab \
+  -v /srv/gitlab/logs:/var/log/gitlab \
+  -v /srv/gitlab/data:/var/opt/gitlab \
+  gitlab/gitlab-ce:latest
+```
+
+ 那么就进入到 `/etc/gitlab/gitlab.rb` 这个文件编辑：
+
+```shell
+docker exec -it 容器id /bin/bash        # 进入容器
+
+vim etc/gitlab/gitlab.rb               # 编辑 gitlab.rb 文件
+```
+
+只需要在这个文件内加上：
+
+```shell
+external_url '主机IP地址'
+```
+
+ <img src="/imgs/img22.png" style="zoom:50%;" />
+
+最后重启容器：
+
+```shell
+exit                      # 退出当前容器
+
+docker restart 容器id      # 重启容器
+```
+
+等到容器重启成功再进去 gitlab 面板，会发现 gitlab 的 http 和 ssl 的 clone 的 IP 地址已经换成服务器的 IP 地址，此时就可以正常 git clone 项目到本地了
+
+
+
 ### 3-3、安装 GitLab Runner
 
