@@ -1234,7 +1234,9 @@ cat /root/test.txt            #查看 /root 目录下 test.txt 文件内容
 
 ## 3、Gitlab CI/CD 持续集成部署
 
-下面，将使用 Gitlab CI/CD + Docker 持续集成部署前端项目
+下面，将使用 Gitlab CI/CD + Docker 持续集成部署前端项目。
+
+官方文档：https://docs.gitlab.com/ee/
 
 
 
@@ -1316,5 +1318,7 @@ git push -u origin master
 
 
 
-### 3-3、安装 GitLab Runner
+### 3-3、安装注册 GitLab Runner
+
+在安装 GitLab Runner 之前，先来了解一些基本概念。
 
