@@ -2,21 +2,195 @@
 
 基于 gitlab ci/cd + docker 进行前端自动化部署。
 
-环境说明：基于阿里云的服务器，配置为 2 核 4G，带宽为 3M，系统是 CentOS 7.7 64 位。
+环境说明：基于阿里云服务器，配置为 2 核 4G（其实最好是 2 核 8 G 的，gitlab 启动挺耗内存的），带宽为 3M，系统是 CentOS 7.7 64 位。
 
 
 
 **目录：**
 
-Docker 基本使用：[Docker](#1、Docker 基本使用)
+Linux 常用命令：[Linux](#1、Linux 常用命令)
 
-Linux 常用命令：[Linux](#2、Linux 常用命令)
+Docker 基本使用：[Docker](#2、Docker 基本使用)
 
 Gitlab CI/CD 持续集成部署：[Gitlab CI/CD](#3、Gitlab-CI/CD 持续集成部署)
 
 
 
-## 1、Docker 基本使用
+## 1、Linux 常用命令
+
+需要掌握一些常用的 Linux 命令。
+
+
+
+### 2-1、pwd
+
+查看当前所在目录路径。linux下所有的绝对路径都是从根目录"/"开始
+
+```shell
+pwd
+```
+
+- /root：是linux下root用户的根目录
+
+- /home：是linux下其他用户的默认根目录 （例如：在linux上创建了一个bow用户，那么就会在/home下面生成一个bow目录作为bow用户的根目录）
+
+- /etc：是linux下系统配置文件目录
+
+- /tmp：临时文件目录，所有用户都可以用
+
+
+
+### 2-2、ls
+
+列出目录下文件
+
+```shell
+ls         # 查看当前目录下的文件
+
+ls -l      # 查看当前目录下所有文件的详细信息
+
+ls -a      # 查看当前目录下的文件(包含隐藏文件，例如以 . 开头的文件)
+
+ls -la     # 查看当前目录下的文件(包含隐藏文件)的详细信息
+
+ls /etc    # 查看目录 /etc 下的文件
+```
+
+
+
+### 2-3、cd
+
+进入一个目录，目录路径可以是绝对路径(以/开始的路径都是绝对路径)，也可以是相对路径
+
+```shell
+cd /               # 进入系统根目录
+
+cd local/          # 进入当前目录下的local目录
+
+cd ./bin           # 进入当前目录下的bin目录
+
+cd ..              # 进入当前目录的上一级目录
+
+cd ../etc          # 进入和当前目录同级的etc目录
+
+cd ~               # 进入当前用户的根目录（root 目录）
+```
+
+
+
+### 2-4、mkdir
+
+创建一个目录，目录路径可以是绝对路径也可以是相对路径
+
+```shell
+mkdir data # 在当前目录下创建一个 data 目录
+
+mkdir ./dir # 在当前目录下创建一个 dir 目录
+
+mkdir /root/tmp  #在 /root 目录下创建一个 tmp 目录
+```
+
+mkdir 创建目录时，只有在目录的上级目录存在时，才会创建
+
+
+
+### 2-5、touch
+
+创建文件
+
+```shell
+touch test.txt          # 在当前目录下创建一个 test.txt 文件
+
+touch /root/test.txt    # 在 /root 目录下创建一个 test.txt 文件
+```
+
+
+
+### 2-6、rm
+
+删除命令
+
+```shell
+rm test.txt                 # 删除当前目录下的 test.txt 文件
+
+rm -f test.txt              # 强制删除当前目录下的 test.txt 文件
+
+rm -rf user                 # 删除当前目录下的 user 目录
+```
+
+
+
+### 2-7、echo
+
+输出命令
+
+```shell
+echo hello                 # 打印 hello
+
+echo $PATH                 # 打印环境变量 PATH 的值
+```
+
+
+
+### 2-8、> 与 >>
+
+输出符号，将内容输出到文件中；>：会覆盖原文件；>>：追加到原文件末尾
+
+```shell
+echo hello > test.txt         # 将 hello 输出到当前目录下的 test.txt 文件
+                              # 如果当前目录下没有 test.txt 文件会创建一个新文件，
+                              # 如果当前目录下有 test.txt，则会删除原文件内容，写入 hello
+
+echo hello >> test.txt        # 将 hello 追加到当前目录下的 test.txt 中，如果文件不存在会创建新文件
+```
+
+
+
+### 2-9、cat
+
+查看文件内容
+
+```shell
+cat test.txt                  # 查看当前目录下 test.txt 的内容
+cat /root/test.txt            #查看 /root 目录下 test.txt 文件内容
+```
+
+
+
+### 2-10、vi 与 vim
+
+这两个都是编辑文件命令。vi 与 vim 命令的使用方法基本一致。个人比较习惯使用 vim。
+
+基本使用：
+
+1. 首先，在 /home 目录下有 test.txt 文件
+
+   ```shell
+   vim /home/test.txt                # 打开 /home 目录下的 test.txt 文件
+   ```
+
+2. 通过 vim 打开文件，是不能直接编辑的，此时只能查看文件内容。输入 i 进入编辑模式
+
+   <img src="./imgs/img14.png"  />
+
+3. 编辑完之后，需要保存退出；首先，Esc 退出编辑模式，然后组合键 `shift + :` ，出现如下
+
+   ![](./imgs/img15.png)
+
+   接下来，可以输入如下某个命令：
+
+   ```shell
+   :w             # 保存文件
+   :q             # 退出 vim 命令
+   :wq            # 保存并退出
+   :w!            # 强制保存
+   :q!            # 强制退出但不保存
+   :wq!           # 强制保存并退出
+   ```
+
+
+
+## 2、Docker 基本使用
 
 官方文档：https://docs.docker.com/
 
@@ -1054,178 +1228,6 @@ Docker 图形化界面管理工具，提供一个管理面板供使用者操作�
 - Rancher，功能齐全，但相对较大
 
 
-
-## 2、Linux 常用命令
-
-需要掌握一些常用的 Linux 命令。
-
-
-
-### 2-1、pwd
-
-查看当前所在目录路径。linux下所有的绝对路径都是从根目录"/"开始
-
-```shell
-pwd
-```
-
-- /root：是linux下root用户的根目录
-
-- /home：是linux下其他用户的默认根目录 （例如：在linux上创建了一个bow用户，那么就会在/home下面生成一个bow目录作为bow用户的根目录）
-
-- /etc：是linux下系统配置文件目录
-
-- /tmp：临时文件目录，所有用户都可以用
-
-
-
-### 2-2、ls
-
-列出目录下文件
-
-```shell
-ls         # 查看当前目录下的文件
-
-ls -l      # 查看当前目录下所有文件的详细信息
-
-ls -a      # 查看当前目录下的文件(包含隐藏文件，例如以 . 开头的文件)
-
-ls -la     # 查看当前目录下的文件(包含隐藏文件)的详细信息
-
-ls /etc    # 查看目录 /etc 下的文件
-```
-
-
-
-### 2-3、cd
-
-进入一个目录，目录路径可以是绝对路径(以/开始的路径都是绝对路径)，也可以是相对路径
-
-```shell
-cd /               # 进入系统根目录
-
-cd local/          # 进入当前目录下的local目录
-
-cd ./bin           # 进入当前目录下的bin目录
-
-cd ..              # 进入当前目录的上一级目录
-
-cd ../etc          # 进入和当前目录同级的etc目录
-
-cd ~               # 进入当前用户的根目录（root 目录）
-```
-
-
-
-### 2-4、mkdir
-
-创建一个目录，目录路径可以是绝对路径也可以是相对路径
-
-```shell
-mkdir data # 在当前目录下创建一个 data 目录
-
-mkdir ./dir # 在当前目录下创建一个 dir 目录
-
-mkdir /root/tmp  #在 /root 目录下创建一个 tmp 目录
-```
-
-mkdir 创建目录时，只有在目录的上级目录存在时，才会创建
-
-
-
-### 2-5、touch
-
-创建文件
-
-```shell
-touch test.txt          # 在当前目录下创建一个 test.txt 文件
-
-touch /root/test.txt    # 在 /root 目录下创建一个 test.txt 文件
-```
-
-
-
-### 2-6、rm
-
-删除命令
-
-```shell
-rm test.txt                 # 删除当前目录下的 test.txt 文件
-
-rm -f test.txt              # 强制删除当前目录下的 test.txt 文件
-
-rm -rf user                 # 删除当前目录下的 user 目录
-```
-
-
-
-### 2-7、echo
-
-输出命令
-
-```shell
-echo hello                 # 打印 hello
-
-echo $PATH                 # 打印环境变量 PATH 的值
-```
-
-
-
-### 2-8、> 与 >>
-
-输出符号，将内容输出到文件中；>：会覆盖原文件；>>：追加到原文件末尾
-
-```shell
-echo hello > test.txt         # 将 hello 输出到当前目录下的 test.txt 文件
-                              # 如果当前目录下没有 test.txt 文件会创建一个新文件，
-                              # 如果当前目录下有 test.txt，则会删除原文件内容，写入 hello
-
-echo hello >> test.txt        # 将 hello 追加到当前目录下的 test.txt 中，如果文件不存在会创建新文件
-```
-
-
-
-### 2-9、cat
-
-查看文件内容
-
-```shell
-cat test.txt                  # 查看当前目录下 test.txt 的内容
-cat /root/test.txt            #查看 /root 目录下 test.txt 文件内容
-```
-
-
-
-### 2-10、vi 与 vim
-
-这两个都是编辑文件命令。vi 与 vim 命令的使用方法基本一致。个人比较习惯使用 vim。
-
-基本使用：
-
-1. 首先，在 /home 目录下有 test.txt 文件
-
-   ```shell
-   vim /home/test.txt                # 打开 /home 目录下的 test.txt 文件
-   ```
-
-2. 通过 vim 打开文件，是不能直接编辑的，此时只能查看文件内容。输入 i 进入编辑模式
-
-    <img src="./imgs/img14.png"  />
-
-3. 编辑完之后，需要保存退出；首先，Esc 退出编辑模式，然后组合键 `shift + :` ，出现如下
-
-    ![](./imgs/img15.png)
-
-   接下来，可以输入如下某个命令：
-
-   ```shell
-   :w             # 保存文件
-   :q             # 退出 vim 命令
-   :wq            # 保存并退出
-   :w!            # 强制保存
-   :q!            # 强制退出但不保存
-   :wq!           # 强制保存并退出
-   ```
 
 
 
