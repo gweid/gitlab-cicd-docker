@@ -26,7 +26,7 @@ Gitlab CI/CD 持续集成部署：[Gitlab CI/CD](#3、Gitlab-CI/CD 持续集成�
 
 **虚拟机：**
 
- <img src="/imgs/img1.png" style="zoom: 50%;" />
+ <img src="./imgs/img1.png" style="zoom: 50%;" />
 
 传统的虚拟机需要模拟整台机器包括硬件，每台虚拟机都需要有自己的操作系统，虚拟机一旦被开启，预分配给他的资源将全部被占用。每一个虚拟机包括应用，必要的二进制和库，以及一个完整的用户操作系统。这就带来了问题：
 
@@ -37,7 +37,7 @@ Gitlab CI/CD 持续集成部署：[Gitlab CI/CD](#3、Gitlab-CI/CD 持续集成�
 
 **容器：**
 
- <img src="/imgs/img2.png" style="zoom:50%;" />
+ <img src="./imgs/img2.png" style="zoom:50%;" />
 
 容器技术是与宿主机共享硬件资源及操作系统可以实现资源的动态分配。容器包含应用和其所有的依赖包，但是与其他容器**共享内核**。容器在宿主机操作系统中，在用户空间以分离的进程运行。
 
@@ -112,7 +112,7 @@ Docker 的镜像仓库类似于代码仓库，用来存储和分发 Docker 镜�
 
 **三者的基本关系**
 
- <img src="/imgs/img3.png" style="zoom:50%;" />
+ <img src="./imgs/img3.png" style="zoom:50%;" />
 
 
 
@@ -178,8 +178,6 @@ sudo yum-config-manager \
     --add-repo \
     http://mirrors.aliyun.com/docker-ce/linux/centos/docker-ce.repo
 ```
-
-
 
 
 
@@ -289,15 +287,15 @@ sudo rm -rf /var/lib/containerd
 
 1. 首先，登陆阿里云，搜索 ==容器镜像服务==【需要登陆的原因是每个人的镜像加速地址都不一样】
 
-   <img src="/imgs/img4.png" style="zoom:50%;" />
+   <img src="./imgs/img4.png" style="zoom:50%;" />
 
 2. 然后点击管理控制台
 
-   ![](/imgs/img5.png)
+   ![](./imgs/img5.png)
 
 3. 进来就可以看到
 
-   ![](/imgs/img6.png)
+   ![](./imgs/img6.png)
 
 4. 然后，根据系统配置镜像加速即可
 
@@ -715,7 +713,7 @@ docker attach <容器id | 容器名>
 docker run -it --name node node /bin/bash
 ```
 
-![](/imgs/img9.png)
+![](./imgs/img9.png)
 
 会发现，进入容器后，终端明显是不同的。并且通过 ls 输出所有目录，通过 `node --version` 输出了当前 node 版本，说明确实进入到了 node 容器的 /bin，并启动了 bash 终端
 
@@ -799,13 +797,13 @@ docker inspect 容器id
 
 可以看到：
 
- <img src="/imgs/img11.png" style="zoom:50%;" />
+ <img src="./imgs/img11.png" style="zoom:50%;" />
 
 
 
 **数据卷同步**
 
-![](/imgs/img12.png)
+![](./imgs/img12.png)
 
 1. 进入主机的 /home/centos 目录，执行 ls，没有文件
 2. 进入容器的 /home 目录，执行 ls，没有文件
@@ -815,7 +813,7 @@ docker inspect 容器id
 
 **容器被删除，主机数据卷也还在**
 
-![](/imgs/img13.png)
+![](./imgs/img13.png)
 
 1. 执行删除容器命令 `docker rm -f`
 2. 查看容器 `docker ps -a`，已经没有容器，确定被删除
@@ -879,7 +877,7 @@ docker commit -m="提交的描述信息" -a="作者" <容器id | 容器名> 生�
 
 4. 最后，通过 `docker images` 查看所有镜像，发现存在 node-hello 镜像
 
-   ![](/imgs/img10.png)
+   ![](./imgs/img10.png)
 
 
 
@@ -926,7 +924,7 @@ COPY dist/ /usr/share/nginx/html
 
 实际上，Dockerfile 的每一行命令，都生成了一个镜像层。
 
- <img src="/imgs/img19.png" style="zoom:50%;" />
+ <img src="./imgs/img19.png" style="zoom:50%;" />
 
 这张图就很好解析了 Docker 镜像分层的概念：基于 centos 创建一个基础镜像是一层，下载 jdk 是一层，下载 tomcat 是一层，最后将这些镜像层打包启动为一个可读写的容器。
 
@@ -1009,7 +1007,7 @@ docker build -f Dockerfile文件路径 -t 镜像名:[tag版本] .
 
 制作完镜像，通过 `docker images` 查看有没有存在镜像
 
-![](/imgs/img20.png)
+![](./imgs/img20.png)
 
 出现刚刚制作的镜像，代表通过 Dockerfile 制作镜像成功，接下来就是将镜像推送到 DockerHub 仓库
 
@@ -1019,7 +1017,7 @@ docker build -f Dockerfile文件路径 -t 镜像名:[tag版本] .
 
 首先，要先到 [DockerHub](https://hub.docker.com/) 上注册一个一个账号。
 
-<img src="/imgs/img21.png" style="zoom:50%;" />
+<img src="./imgs/img21.png" style="zoom:50%;" />
 
 这里要记住 Docker ID 与密码，后面登陆 DockerHub 需要用到
 
@@ -1212,11 +1210,11 @@ cat /root/test.txt            #查看 /root 目录下 test.txt 文件内容
 
 2. 通过 vim 打开文件，是不能直接编辑的，此时只能查看文件内容。输入 i 进入编辑模式
 
-    <img src="/imgs/img14.png"  />
+    <img src="./imgs/img14.png"  />
 
 3. 编辑完之后，需要保存退出；首先，Esc 退出编辑模式，然后组合键 `shift + :` ，出现如下
 
-    ![](/imgs/img15.png)
+    ![](./imgs/img15.png)
 
    接下来，可以输入如下某个命令：
 
@@ -1242,7 +1240,7 @@ cat /root/test.txt            #查看 /root 目录下 test.txt 文件内容
 
 先将服务器的安全组配置一下，主要是入口方向的，这样外部才能访问到
 
-![](/imgs/img16.png)
+![](./imgs/img16.png)
 
 
 
@@ -1279,7 +1277,7 @@ sudo docker run --detach \
 
 等到 Gitlab 安装完，并启动好，那么就可以通过配置的 hostname 进行访问，例如这里配置的是 111.121.55.114，浏览器打开这个 ip 地址，如果出现以下界面，则说明 Gitlab 安装成功
 
-![](/imgs/img17.png)
+![](./imgs/img17.png)
 
 
 
@@ -1293,7 +1291,7 @@ sudo docker run --detach \
 
 首先，在 Gitlab 上新建一个项目仓库：
 
-![](/imgs/img18.png)
+![](./imgs/img18.png)
 
 
 
@@ -1350,7 +1348,7 @@ vim etc/gitlab/gitlab.rb               # 编辑 gitlab.rb 文件
 external_url '主机IP地址'
 ```
 
- <img src="/imgs/img22.png" style="zoom:50%;" />
+ <img src="./imgs/img22.png" style="zoom:50%;" />
 
 最后重启容器：
 
